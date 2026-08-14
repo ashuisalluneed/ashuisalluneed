@@ -18,19 +18,31 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: generate trophy.svg
-        uses: Erik-Donath/github-profile-trophy@feature/generate-svg
+      - name: checkout trophy generator
+        uses: actions/checkout@v4
         with:
-          username: ${{ github.repository_owner }}
-          file: dist/trophy.svg
-          # Requires repo secret GH_PAT: classic PAT with repo + read:user
-          token: ${{ secrets.GH_PAT }}
-          theme: dracula
-          max-rows: 1
-          margin-width: 8
-          margin-height: 8
-          no-background: false
-          no-frame: false
+          repository: Erik-Donath/github-profile-trophy
+          ref: feature/generate-svg
+          path: trophy-src
+          persist-credentials: false
+
+      - name: setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: generate trophy.svg
+        env:
+          GITHUB_TOKEN1: ${{ secrets.GH_PAT }}
+        run: |
+          deno run --allow-net --allow-env --allow-read --allow-write \
+            trophy-src/render_svg.ts \
+            "${{ github.repository_owner }}" \
+            --file dist/trophy.svg \
+            --theme dracula \
+            --rows 1 \
+            --margin-width 8 \
+            --margin-height 8
 
       - name: push trophy.svg to the output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
