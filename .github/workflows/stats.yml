@@ -18,15 +18,35 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: generate stats.svg
-        uses: readme-tools/github-readme-stats-action@v1
+      - name: checkout stats generator
+        uses: actions/checkout@v4
         with:
-          card: stats
-          options: username=${{ github.repository_owner }}&hide_title=false&hide_rank=false&show_icons=true&include_all_commits=true&count_private=true&disable_animations=false&theme=dracula&locale=en&hide_border=false
-          path: dist/stats.svg
-          # Requires repo secret GH_PAT: classic PAT with repo + read:user
-          token: ${{ secrets.GH_PAT }}
+          repository: readme-tools/github-readme-stats-action
+          ref: v1
+          path: stats-src
+          persist-credentials: false
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
+        with:
+          package_json_file: stats-src/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: stats-src
+
+      - name: generate stats.svg
+        run: node stats-src/index.js
+        env:
+          INPUT_CARD: stats
+          INPUT_OPTIONS: username=${{ github.repository_owner }}&hide_title=false&hide_rank=false&show_icons=true&include_all_commits=true&count_private=true&disable_animations=false&theme=dracula&locale=en&hide_border=false
+          INPUT_PATH: dist/stats.svg
+          PAT_1: ${{ secrets.GH_PAT }}
 
       - name: push stats.svg to the output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
